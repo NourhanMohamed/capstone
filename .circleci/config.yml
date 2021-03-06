@@ -30,7 +30,7 @@ jobs:
   containerize:
     executor: docker/machine
     steps:
-      - setup_remote_docker
+      # - setup_remote_docker
       - checkout
       - docker/check
       - docker/build:
