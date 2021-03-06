@@ -28,4 +28,4 @@ jobs:
 workflows:
   default:
     jobs:
-      -build_and_lint
+      - build_and_lint
