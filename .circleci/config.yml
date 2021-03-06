@@ -24,8 +24,19 @@ jobs:
           command: |
             . venv/bin/activate
             make lint
+  containerize:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - run:
+          name: Login to docker
+          command: |
+            docker login
 
 workflows:
   default:
     jobs:
       - build_and_lint
+      - containerize
+          requires: [build_and_lint]
