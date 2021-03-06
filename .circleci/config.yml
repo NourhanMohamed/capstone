@@ -26,7 +26,7 @@ jobs:
             make lint
   containerize:
     docker:
-      - image: python:3.7-alpine3.11
+      - image: cimg/base:2021.03
     steps:
       - checkout
       - run:
