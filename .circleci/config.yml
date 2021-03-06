@@ -33,7 +33,6 @@ jobs:
       - setup_remote_docker
       - checkout
       - docker/check
-      - docker/dockerlint
       - docker/build:
           image: mohamn9/capstone
       - docker/push:
