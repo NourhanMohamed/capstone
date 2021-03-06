@@ -30,9 +30,11 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Login to docker
+          name: Containerize Application and push to DockerHub
           command: |
-            docker login
+            docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
+            chmod +x ./containerize.sh
+            ./containerize.sh
 
 workflows:
   default:
