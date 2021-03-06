@@ -28,7 +28,7 @@ jobs:
             . venv/bin/activate
             make lint
   containerize:
-    executor: docker/docker
+    executor: docker/machine
     steps:
       - setup_remote_docker
       - checkout
