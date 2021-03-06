@@ -33,8 +33,10 @@ jobs:
           name: Containerize Application and push to DockerHub
           command: |
             docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
-            chmod +x ./containerize.sh
-            ./containerize.sh
+            docker build --tag=capstone .
+            docker image ls
+            dockerpath=mohamn9/capstone
+            docker push $dockerpath
 
 workflows:
   default:
