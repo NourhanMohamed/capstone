@@ -1,4 +1,7 @@
 version: 2.1
+orbs:
+  docker: circleci/docker@1.5.0
+
 jobs:
   build_and_lint:
     docker:
@@ -25,18 +28,33 @@ jobs:
             . venv/bin/activate
             make lint
   containerize:
-    docker:
-      - image: cimg/base:2021.03
+    executor: docker/docker
     steps:
+      - setup_remote_docker
       - checkout
+      - docker/check
+      - docker/dockerlint
+      - docker/build:
+          image: mohamn9/capstone
+      - docker/push:
+          digest-path: /tmp/digest.txt
+          image: mohamn9/capstone
       - run:
-          name: Containerize Application and push to DockerHub
           command: |
-            docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
-            docker build --tag=capstone .
-            docker image ls
-            dockerpath=mohamn9/capstone
-            docker push $dockerpath
+            echo "Digest is: $(</tmp/digest.txt)"
+
+  #   docker:
+  #     - image: cimg/base:2021.03
+  #   steps:
+  #     - checkout
+  #     - run:
+  #         name: Containerize Application and push to DockerHub
+  #         command: |
+  #           docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
+  #           docker build --tag=capstone .
+  #           docker image ls
+  #           dockerpath=mohamn9/capstone
+  #           docker push $dockerpath
 
 workflows:
   default:
