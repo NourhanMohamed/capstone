@@ -166,4 +166,4 @@ workflows:
       - configure-infrastructure-kubernettes:
           requires: [configure-infrastructure-docker]
       - cleanup-green-stack:
-          requires: [configure-infrastructure]
+          requires: [configure-infrastructure-kubernettes]
