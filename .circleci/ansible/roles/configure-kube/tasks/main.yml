@@ -11,6 +11,12 @@
     name: kubectl
     update_cache: yes
 
+- name: "Install Minikube pre-requisite packages"
+  become: yes
+  apt:
+    name: conntrack
+    update_cache: yes
+
 - name: "Fetch Minikube packages"
   shell: |
     curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
