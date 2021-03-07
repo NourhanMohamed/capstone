@@ -1,0 +1,40 @@
+Description: >
+  Capstone blue infrastructure configuration
+
+Parameters:
+  ID:
+    Description: Unique identifier.
+    Type: String
+
+Resources:
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub capstone-${ID}
+      GroupDescription: Allow port 22.
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.medium
+      SecurityGroups:
+        - Ref: InstanceSecurityGroup
+      KeyName: udacity
+      ImageId: ami-07dd19a7900a1f049
+      BlockDeviceMappings: 
+      - DeviceName: "/dev/sda1"
+        Ebs:
+          DeleteOnTermination: "false"
+          VolumeSize: "25"
+      Tags:
+        - Key: Name
+          Value: !Sub capstone-${ID}
