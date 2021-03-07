@@ -22,7 +22,7 @@
 
 - name: "Start Minikube"
   shell: |
-    minikube start
+    minikube start --driver=none
 
 - name: "Run project pod"
   shell: |
