@@ -157,7 +157,8 @@ workflows:
   default:
     jobs:
       - build_and_lint
-      - containerize
+      - containerize:
+          requires: [build_and_lint]
       - deploy-infrastrucure:
           requires: [containerize]
       - configure-infrastructure-docker:
