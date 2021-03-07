@@ -59,6 +59,7 @@ jobs:
       - docker/push:
           digest-path: /tmp/digest.txt
           image: mohamn9/capstone
+          tag: latest
       - run:
           command: |
             echo "Digest is: $(</tmp/digest.txt)"
