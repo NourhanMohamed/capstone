@@ -2,6 +2,26 @@ version: 2.1
 orbs:
   docker: circleci/docker@1.5.0
 
+commands:
+  destroy-environment:
+    description: Destroy created AWS Cloud Formation Stacks  
+    steps:
+      - run:
+          name: Install AWS CLI
+          when: on_fail
+          command: |
+            if ! [ -x "$(command -v aws)" ]; then
+            pip install awscli
+            else
+            echo "AWS CLI already installed"
+            fi
+      - run:
+          name: Delete stacks
+          when: on_fail
+          command: |
+            aws cloudformation delete-stack \
+            --stack-name capstone-${CIRCLE_WORKFLOW_ID:0:7}
+
 jobs:
   build_and_lint:
     docker:
@@ -27,10 +47,10 @@ jobs:
           command: |
             . venv/bin/activate
             make lint
+
   containerize:
     executor: docker/machine
     steps:
-      # - setup_remote_docker
       - checkout
       - docker/check
       - docker/build:
@@ -42,22 +62,85 @@ jobs:
           command: |
             echo "Digest is: $(</tmp/digest.txt)"
 
+  deploy-infrastrucure:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            yum -y install tar 
+            yum -y install gzip
+      - run:
+          name: Deploy EC2 Instance for Blue Deployment
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/capstone.yml \
+              --tags project=capstone \
+              --stack-name "capstone-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="capstone-${CIRCLE_WORKFLOW_ID:0:7}"
+      - run:
+          name: Add EC2 IP to ansible inventory
+          command: |
+            echo -e "[web]\n" > ./.circleci/ansible/inventory.txt
+            aws ec2 describe-instances \
+            --query 'Reservations[*].Instances[*].PublicIpAddress' \
+            --filters "Name=tag:project,Values=capstone" \
+            --output text >> ./.circleci/ansible/inventory.txt
+            cat ./.circleci/ansible/inventory.txt
+      - run:
+          name: Add EC2 IP to IP.txt file for later use
+          command: |
+            aws ec2 describe-instances \
+            --query 'Reservations[*].Instances[*].PublicIpAddress' \
+            --filters "Name=tag:project,Values=capstone" \
+            --output text > ./.circleci/ansible/ip.txt
+            cat ./.circleci/ansible/ip.txt
+      - persist_to_workspace:
+          root: .circleci/ansible/
+          paths:
+            - inventory.txt
+            - ip.txt
+      - destroy-environment
+
+  configure-infrastructure:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["46:b9:a1:f5:76:44:d2:59:6a:14:14:45:28:7c:65:4d"]
+      - attach_workspace:
+          at: .circleci/ansible/
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update ansible
+      - run:
+          name: Configure server
+          command: |
+            ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ./.circleci/ansible/inventory.txt ./.circleci/ansible/configure-server.yml
+      - destroy-environment
+
+  # cleanup:
   #   docker:
-  #     - image: cimg/base:2021.03
+  #     - image: amazon/aws-cli
   #   steps:
   #     - checkout
   #     - run:
-  #         name: Containerize Application and push to DockerHub
+  #         name: Destroy Green Stack
   #         command: |
-  #           docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
-  #           docker build --tag=capstone .
-  #           docker image ls
-  #           dockerpath=mohamn9/capstone
-  #           docker push $dockerpath
+  #           aws cloudformation delete-stack --stack-name $GREEN_STACK_NAME
 
 workflows:
   default:
     jobs:
       - build_and_lint
-      - containerize:
-          requires: [build_and_lint]
+      - containerize
+      - deploy-infrastrucure:
+          requires: [containerize]
+      - configure-infrastructure:
+          requires: [deploy-infrastrucure]
+      # - cleanup:
+      #     requires: [configure-infrastructure]
