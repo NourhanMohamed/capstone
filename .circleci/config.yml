@@ -104,7 +104,7 @@ jobs:
             - ip.txt
       - destroy-environment
 
-  configure-infrastructure:
+  configure-infrastructure-docker:
     docker:
       - image: python:3.7-alpine3.11
     steps:
@@ -121,9 +121,26 @@ jobs:
           name: Configure server
           command: |
             ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ./.circleci/ansible/inventory.txt ./.circleci/ansible/configure-docker.yml
-            ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ./.circleci/ansible/inventory.txt ./.circleci/ansible/configure-kube.yml
       - destroy-environment
 
+  configure-infrastructure-kubernettes:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["46:b9:a1:f5:76:44:d2:59:6a:14:14:45:28:7c:65:4d"]
+      - attach_workspace:
+          at: .circleci/ansible/
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update ansible
+      - run:
+          name: Configure server
+          command: |
+            ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ./.circleci/ansible/inventory.txt ./.circleci/ansible/configure-kube.yml
+      - destroy-environment
   # cleanup:
   #   docker:
   #     - image: amazon/aws-cli
@@ -141,7 +158,9 @@ workflows:
       - containerize
       - deploy-infrastrucure:
           requires: [containerize]
-      - configure-infrastructure:
+      - configure-infrastructure-docker:
           requires: [deploy-infrastrucure]
+      - configure-infrastructure-kubernettes:
+          requires: [configure-infrastructure-docker]
       # - cleanup:
       #     requires: [configure-infrastructure]
