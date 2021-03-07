@@ -55,6 +55,7 @@ jobs:
       - docker/check
       - docker/build:
           image: mohamn9/capstone
+          tag: latest
       - docker/push:
           digest-path: /tmp/digest.txt
           image: mohamn9/capstone
