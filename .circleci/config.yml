@@ -143,15 +143,15 @@ jobs:
           command: |
             ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ./.circleci/ansible/inventory.txt ./.circleci/ansible/configure-kube.yml
       - destroy-environment
-  # cleanup:
-  #   docker:
-  #     - image: amazon/aws-cli
-  #   steps:
-  #     - checkout
-  #     - run:
-  #         name: Destroy Green Stack
-  #         command: |
-  #           aws cloudformation delete-stack --stack-name $GREEN_STACK_NAME
+  cleanup:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Destroy Green Stack
+          command: |
+            aws cloudformation delete-stack --stack-name $GREEN_STACK_NAME
 
 workflows:
   default:
