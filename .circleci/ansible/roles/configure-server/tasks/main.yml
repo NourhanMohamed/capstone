@@ -1,28 +1,76 @@
 ---
 - name: "Copy files to EC2 instance"
   copy:
-    src: /root/project/scripts/*
+    src: /root/project/scripts/
     dest: /home/ubuntu
 
-- name: "Modify script privileges"
-  shell: |
-    cd /home/ubuntu
-    chmod +x *.sh
+- name: "Remove old Docker packages"
+  become: yes
+  apt:
+    pkg:
+    - docker
+    - docker-engine
+    - docker.io
+    - containerd
+    - runc
+    update_cache: yes
+    state: absent
 
-- name: "Install docker"
-  shell: |
-    cd /home/ubuntu
-    ./install-docker.sh
+- name: "Install Docker pre-requisites"
+  become: yes
+  apt:
+    pkg:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - gnupg
+    update_cache: yes
 
-- name: "Install kubernettes"
+- name: "Download Docker files"
+  become: yes
   shell: |
-    cd /home/ubuntu
-    ./install-kubectl.sh
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    echo   "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+- name: "Install Docker pre-requisites"
+  become: yes
+  apt:
+    pkg:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    update_cache: yes
+
+- name: "Fix docker non-root privileges"
+  become: yes
+  shell: |
+    usermod -aG docker $USER
+
+- name: "Refresh docker group status"
+  shell: |
+    newgrp docker
+
+- name: "Download kubernetes files"
+  become: yes
+  shell: |
+    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+    echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+
+- name: "Install kubernetes packages"
+  become: yes
+  apt:
+    name: kubectl
+    update_cache: yes
+
+- name: "Fetch Minikube packages"
+  shell: |
+    curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
 
 - name: "Install Minikube"
+  become: yes
   shell: |
-    cd /home/ubuntu
-    ./install-minikube.sh
+    install minikube-linux-amd64 /usr/local/bin/minikube
 
 - name: "Start Minikube"
   shell: |
@@ -31,4 +79,5 @@
 - name: "Run project pod"
   shell: |
     cd /home/ubuntu
-    ./run-kubernettes.sh   
+    chmod +x run-kubernettes.sh
+    ./run-kubernettes.sh  
